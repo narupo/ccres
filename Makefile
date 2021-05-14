@@ -10,6 +10,7 @@ OBJS::= \
 	build/token.o \
 	build/tokenizer.o \
 	build/parser.o \
+	build/renderer.o \
 
 all: $(PROG) build/tests/tests
 
@@ -44,4 +45,6 @@ build/token.o: ccres/token.cc ccres/token.h
 build/tokenizer.o: ccres/tokenizer.cc ccres/tokenizer.h
 	$(CC) $(CCFLAGS) -c -o $@ $<
 build/parser.o: ccres/parser.cc ccres/parser.h
+	$(CC) $(CCFLAGS) -c -o $@ $<
+build/renderer.o: ccres/renderer.cc ccres/renderer.h
 	$(CC) $(CCFLAGS) -c -o $@ $<

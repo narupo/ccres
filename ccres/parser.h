@@ -27,6 +27,7 @@ public:
     );
 
 private:
+    void _read_if(token_type_t type);
     void _read_newlines();
     void _read_spaces();
     void _read_spaces_and_newlines();

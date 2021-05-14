@@ -1,4 +1,5 @@
 #include <ccres/app.h>
+#include <ccres/renderer.h>
 
 namespace ccres {
 
@@ -8,7 +9,8 @@ App::~App() {
 App::App(int argc, char *argv[])
     : _args()
     , _tokenizer()
-    , _parser() {
+    , _parser()
+    , _renderer() {
     _args = _argv_to_args(argv);
 }
 
@@ -24,11 +26,8 @@ int App::run() {
     auto text = String();
     text.read_stream(std::cin);
     auto tokens = _tokenizer.tokenize(text);
-    for (const auto &tok : tokens) {
-        std::cout << tok->type << ": ";
-        std::wcout << tok->text << std::endl;
-    }
-    _parser.parse(tokens);
+    auto responses = _parser.parse(tokens);
+    _renderer.render_responses(responses);
     return 0;
 }
 

@@ -29,6 +29,12 @@ const std::vector<std::shared_ptr<Response>> &Parser::parse(const std::vector<st
     return _responses;
 }
 
+void Parser::_read_if(token_type_t type) {
+    if ((*_p)->type == type) {
+        _p++;
+    }
+}
+
 void Parser::_read_newlines() {
     for (; _p != _end; ) {
         auto t = *_p++;
@@ -50,9 +56,14 @@ void Parser::_read_spaces() {
 }
 
 void Parser::_read_spaces_and_newlines() {
-    _read_newlines();
-    _read_spaces();
-    _read_newlines();
+    for (; _p != _end; ) {
+        auto t = *_p++;
+        if (!(t->type == TOKEN_TYPE_SPACES ||
+              t->type == TOKEN_TYPE_NEWLINE)) {
+            _p--;
+            break;
+        }
+    }
 }
 
 bool Parser::is_response(
@@ -77,6 +88,13 @@ bool Parser::_p_number() {
     _response = std::make_shared<Response>();
     _response->number = std::stoi(t->text);
 
+    _read_spaces_and_newlines();
+    _read_if(TOKEN_TYPE_COLON);
+
+    if (_p == _end) {
+        return false;
+    }
+
     return _p_name();
 }
 
@@ -88,10 +106,15 @@ bool Parser::_p_name() {
     _read_spaces_and_newlines();
     auto t = *_p++;
     if (t->type != TOKEN_TYPE_TEXT) {
-        return false;
+        _p--;
+        return _p_date();
     }
 
     _response->name = t->text;
+
+    if (_p == _end) {
+        return false;
+    }
 
     return _p_date();
 }
@@ -113,11 +136,23 @@ bool Parser::_p_date() {
     }
     _response->datetime.tm_year = std::stoi(t->text) - 1900;
 
+    if (_p == _end) {
+        return false;
+    }
+
     _read_spaces_and_newlines();
     t = *_p++;
-    if (t->type != TOKEN_TYPE_DATE_SEP) {
+    if (t->type == TOKEN_TYPE_COLON) {
         _p = savep;
+        _response->datetime.tm_year = 0;
         return _p_time();
+    } else if (t->type != TOKEN_TYPE_DATE_SEP) {
+        _p--;
+        return _p_time();
+    }
+
+    if (_p == _end) {
+        return false;
     }
 
     // month
@@ -129,11 +164,19 @@ bool Parser::_p_date() {
     }
     _response->datetime.tm_mon = std::stoi(t->text) - 1;
 
+    if (_p == _end) {
+        return false;
+    }
+
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_DATE_SEP) {
         _p--;
         return _p_time();
+    }
+
+    if (_p == _end) {
+        return false;
     }
 
     // day
@@ -145,15 +188,17 @@ bool Parser::_p_date() {
     }
     _response->datetime.tm_mday = std::stoi(t->text);
 
+    if (_p == _end) {
+        return true;
+    }
+
     return _p_time();
 }
 
 bool Parser::_p_time() {
     if (_p == _end) {
-        return false;
+        return true;
     }
-
-    auto savep = _p;
 
     // hour
     _read_spaces_and_newlines();
@@ -164,41 +209,62 @@ bool Parser::_p_time() {
     }
     _response->datetime.tm_hour = std::stoi(t->text);
 
+    if (_p == _end) {
+        return false;
+    }
+
     t = *_p++;
     if (t->type != TOKEN_TYPE_COLON) {
-        _p = savep;
+        _p--;
         return _p_id();
+    }
+
+    if (_p == _end) {
+        return false;
     }
 
     // min
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        _p = savep;
+        _p--;
         return _p_id();
     }
     _response->datetime.tm_min = std::stoi(t->text);
 
+    if (_p == _end) {
+        return false;
+    }
+
     t = *_p++;
     if (t->type != TOKEN_TYPE_COLON) {
-        _p = savep;
+        _p--;
         return _p_id();
+    }
+
+    if (_p == _end) {
+        return false;
     }
 
     // sec
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
+        _p--;
         return _p_id();
     }
     _response->datetime.tm_sec = std::stoi(t->text);
+
+    if (_p == _end) {
+        return true;
+    }
 
     return _p_id();
 }
 
 bool Parser::_p_id() {
     if (_p == _end) {
-        return false;
+        return true;
     }
 
     if (_check) {
@@ -210,6 +276,10 @@ bool Parser::_p_id() {
     if (t->type != TOKEN_TYPE_ID) {
         _p--;
         return _p_content();
+    }
+
+    if (_p == _end) {
+        return true;
     }
 
     auto buf = String();
