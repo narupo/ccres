@@ -7,7 +7,8 @@ App::~App() {
 
 App::App(int argc, char *argv[])
     : _args()
-    , _tokenizer() {
+    , _tokenizer()
+    , _parser() {
     _args = _argv_to_args(argv);
 }
 
@@ -24,9 +25,10 @@ int App::run() {
     text.read_stream(std::cin);
     auto tokens = _tokenizer.tokenize(text);
     for (const auto &tok : tokens) {
-        std::cout << tok.type << ": ";
-        std::wcout << tok.text << std::endl;
+        std::cout << tok->type << ": ";
+        std::wcout << tok->text << std::endl;
     }
+    _parser.parse(tokens);
     return 0;
 }
 

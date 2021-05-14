@@ -8,19 +8,19 @@ Tokenizer::~Tokenizer() {
 Tokenizer::Tokenizer() : _tokens(), _p(), _end() {
 }
 
-const std::vector<Token> &Tokenizer::tokenize(const String &text) {
+const std::vector<std::shared_ptr<Token>> &Tokenizer::tokenize(const String &text) {
     _tokens.clear();
     _p = text.cbegin();
     _end = text.cend();
     auto buf = String();
 
     auto store = [&](token_type_t type, String &&text) {
-        auto token = Token(type, std::move(text));
+        auto &&token = std::make_shared<Token>(type, std::move(text));
         _tokens.emplace_back(std::move(token));
     };
     auto store_text = [&]() {
         if (buf.length()) {
-            auto token = Token(TOKEN_TYPE_TEXT, std::move(buf));
+            auto &&token = std::make_shared<Token>(TOKEN_TYPE_TEXT, std::move(buf));
             _tokens.emplace_back(std::move(token));
             buf.clear();
         }
@@ -48,22 +48,33 @@ const std::vector<Token> &Tokenizer::tokenize(const String &text) {
             auto s = String();
             s.push_back(c1);
             store(TOKEN_TYPE_DATE_SEP, std::move(s));
-        } else if (c1 == '\r' && c2 == '\n') {
+        } else if (c1 == L'\r' && c2 == L'\n') {
             store_text();
             auto s = String();
             s.push_back(c1);
             s.push_back(c2);
             store(TOKEN_TYPE_NEWLINE, std::move(s));
-        } else if (c1 == '\r' || c1 == '\n') {
+            _p++;
+        } else if (c1 == L'\r' || c1 == L'\n') {
             store_text();
             auto s = String();
             s.push_back(c1);
             store(TOKEN_TYPE_NEWLINE, std::move(s));
+        } else if ((c1 == L'I' && c2 == L'D') ||
+                   (c1 == L'i' && c2 == L'd')) {
+            store_text();
+            auto s = String();
+            s.push_back(c1);
+            s.push_back(c2);
+            store(TOKEN_TYPE_ID, std::move(s));
+            _p++;
         } else {
             buf += c1;
         }
     }
 
+    store_text();
+    
     return _tokens;
 }
 
@@ -81,7 +92,7 @@ void Tokenizer::_read_spaces() {
     }
 
     if (buf.length()) {
-        auto token = Token(TOKEN_TYPE_SPACES, std::move(buf));
+        auto &&token = std::make_shared<Token>(TOKEN_TYPE_SPACES, std::move(buf));
         _tokens.emplace_back(std::move(token));
     }
 }
@@ -117,8 +128,8 @@ void Tokenizer::_read_digits() {
 
 done:
     if (buf.length()) {
-        auto &&tok = Token(TOKEN_TYPE_DIGIT, std::move(buf));
-        _tokens.emplace_back(std::move(tok));
+        auto &&token = std::make_shared<Token>(TOKEN_TYPE_DIGIT, std::move(buf));
+        _tokens.emplace_back(std::move(token));
     }
 }
 

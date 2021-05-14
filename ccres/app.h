@@ -3,13 +3,15 @@
 #include <string>
 #include <iostream>
 #include <ccres/tokenizer.h>
+#include <ccres/parser.h>
 
 namespace ccres {
 
 class App {
 private:
     std::vector<std::string> _args;
-    ccres::Tokenizer _tokenizer;
+    Tokenizer _tokenizer;
+    Parser _parser;
 
 public:
     ~App();
