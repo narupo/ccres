@@ -242,7 +242,6 @@ static void test_parser() {
     assert(responses[0]->datetime.tm_sec == 45);
     assert(responses[0]->id == L"ID:abc");
     assert(responses[0]->content == L"content");
-
 }
 }  // ccres
 
