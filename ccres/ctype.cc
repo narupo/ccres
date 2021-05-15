@@ -28,4 +28,20 @@ bool isdatesep(wchar_t c) {
            c == L'_' || c == L'＿';
 }
 
+bool isyoubileft(wchar_t c) {
+    return c == L'[' || c == L'「' ||
+           c == L'(' || c == L'（' ||
+           c == L'<' || c == L'＜' ||
+           c == L'{' || c == L'｛' ||
+           c == L'【'; 
+}
+
+bool isyoubiright(wchar_t c) {
+    return c == L']' || c == L'」' ||
+           c == L')' || c == L'）' ||
+           c == L'>' || c == L'＞' ||
+           c == L'}' || c == L'｝' ||
+           c == L'】';
+}
+
 };  // ccres

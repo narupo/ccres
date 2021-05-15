@@ -86,7 +86,11 @@ bool Parser::_p_number() {
     }
 
     _response = std::make_shared<Response>();
-    _response->number = std::stoi(t->text);
+    try {
+        _response->number = std::stoi(t->text);
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
 
     _read_spaces_and_newlines();
     _read_if(TOKEN_TYPE_COLON);
@@ -125,7 +129,9 @@ bool Parser::_p_date() {
     }
 
     auto savep = _p;
-    _response->datetime = (struct tm){0};
+    _response->datetime = (struct tm){
+        .tm_wday = -1,
+    };
 
     // year
     _read_spaces_and_newlines();
@@ -134,7 +140,11 @@ bool Parser::_p_date() {
         _p = savep;
         return _p_id();
     }
-    _response->datetime.tm_year = std::stoi(t->text) - 1900;
+    try {
+        _response->datetime.tm_year = std::stoi(t->text) - 1900;
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
 
     if (_p == _end) {
         return false;
@@ -148,7 +158,7 @@ bool Parser::_p_date() {
         return _p_time();
     } else if (t->type != TOKEN_TYPE_DATE_SEP) {
         _p--;
-        return _p_time();
+        return _p_youbi();
     }
 
     if (_p == _end) {
@@ -160,9 +170,13 @@ bool Parser::_p_date() {
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
         _p--;
-        return _p_time();
+        return _p_youbi();
     }
-    _response->datetime.tm_mon = std::stoi(t->text) - 1;
+    try {
+        _response->datetime.tm_mon = std::stoi(t->text) - 1;
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
 
     if (_p == _end) {
         return false;
@@ -172,7 +186,7 @@ bool Parser::_p_date() {
     t = *_p++;
     if (t->type != TOKEN_TYPE_DATE_SEP) {
         _p--;
-        return _p_time();
+        return _p_youbi();
     }
 
     if (_p == _end) {
@@ -184,9 +198,68 @@ bool Parser::_p_date() {
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
         _p--;
+        return _p_youbi();
+    }
+    try {
+        _response->datetime.tm_mday = std::stoi(t->text);
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
+
+    if (_p == _end) {
+        return true;
+    }
+
+    return _p_youbi();
+}
+
+bool Parser::_p_youbi() {
+    if (_p == _end) {
+        return true;
+    }
+
+    auto savep = _p;
+
+    // youbi left
+    _read_spaces_and_newlines();
+    auto t = *_p++;
+    if (t->type != TOKEN_TYPE_YOUBI_LEFT) {
+        _p--;
         return _p_time();
     }
-    _response->datetime.tm_mday = std::stoi(t->text);
+
+    if (_p == _end) {
+        return true;
+    }
+
+    // youbi text
+    _read_spaces_and_newlines();
+    t = *_p++;
+    if (t->type != TOKEN_TYPE_TEXT) {
+        _p = savep;
+        return _p_time();
+    }
+
+    static const wchar_t *youbi[] = {L"日", L"月", L"火", L"水", L"木", L"金", L"土", NULL};
+    _response->datetime.tm_wday = -1;
+    for (int i = 0; youbi[i]; i++) {
+        if (youbi[i] == t->text) {
+            _response->datetime.tm_wday = i;
+            break;
+        }
+    }
+
+    if (_p == _end) {
+        return true;
+    }
+
+    // youbi right
+    _read_spaces_and_newlines();
+    t = *_p++;
+    if (t->type != TOKEN_TYPE_YOUBI_RIGHT) {
+        _p--;
+        return _p_time();
+    }
 
     if (_p == _end) {
         return true;
@@ -207,7 +280,11 @@ bool Parser::_p_time() {
         _p--;
         return _p_id();
     }
-    _response->datetime.tm_hour = std::stoi(t->text);
+    try {
+        _response->datetime.tm_hour = std::stoi(t->text);
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
 
     if (_p == _end) {
         return false;
@@ -230,7 +307,11 @@ bool Parser::_p_time() {
         _p--;
         return _p_id();
     }
-    _response->datetime.tm_min = std::stoi(t->text);
+    try {
+        _response->datetime.tm_min = std::stoi(t->text);
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
 
     if (_p == _end) {
         return false;
@@ -253,7 +334,11 @@ bool Parser::_p_time() {
         _p--;
         return _p_id();
     }
-    _response->datetime.tm_sec = std::stoi(t->text);
+    try {
+        _response->datetime.tm_sec = std::stoi(t->text);
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
 
     if (_p == _end) {
         return true;

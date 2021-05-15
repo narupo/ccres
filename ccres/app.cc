@@ -24,10 +24,11 @@ std::vector<std::string> App::_argv_to_args(char *argv[]) {
 
 int App::run() {
     auto text = String();
-    text.read_stream(std::cin);
+    text.read_stream(std::wcin);
     auto tokens = _tokenizer.tokenize(text);
     auto responses = _parser.parse(tokens);
-    _renderer.render_responses(responses);
+    // _renderer.render_responses(responses);
+    _renderer.render_responses_as_json(responses);
     return 0;
 }
 

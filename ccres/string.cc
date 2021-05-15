@@ -2,10 +2,10 @@
 
 namespace ccres {
 
-void String::read_stream(std::istream &ins) {
-    std::string s = "";
-    char c;
-    while (ins.get(c)) {
+void String::read_stream(std::wistream &fin) {
+    std::wstring s = L"";
+    wchar_t c;
+    while (fin.get(c)) {
         s += c;
     }
 

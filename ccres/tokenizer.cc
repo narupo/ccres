@@ -68,6 +68,16 @@ const std::vector<std::shared_ptr<Token>> &Tokenizer::tokenize(const String &tex
             s.push_back(c2);
             store(TOKEN_TYPE_ID, std::move(s));
             _p++;
+        } else if (isyoubileft(c1)) {
+            store_text();
+            auto s = String();
+            s.push_back(c1);
+            store(TOKEN_TYPE_YOUBI_LEFT, std::move(s));
+        } else if (isyoubiright(c1)) {
+            store_text();
+            auto s = String();
+            s.push_back(c1);
+            store(TOKEN_TYPE_YOUBI_RIGHT, std::move(s));
         } else {
             buf += c1;
         }

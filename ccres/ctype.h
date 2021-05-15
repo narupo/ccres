@@ -9,5 +9,7 @@ bool isdot(wchar_t c);
 bool isspace(wchar_t c);
 bool iscolon(wchar_t c);
 bool isdatesep(wchar_t c);
+bool isyoubileft(wchar_t c);
+bool isyoubiright(wchar_t c);
 
 };  // ccres

@@ -11,6 +11,8 @@ typedef enum {
     TOKEN_TYPE_DATE_SEP,
     TOKEN_TYPE_NEWLINE,
     TOKEN_TYPE_ID,
+    TOKEN_TYPE_YOUBI_LEFT,
+    TOKEN_TYPE_YOUBI_RIGHT,
 } token_type_t;
 
 struct Token {

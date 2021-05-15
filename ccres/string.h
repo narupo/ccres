@@ -6,7 +6,7 @@ namespace ccres {
 
 class String : public std::wstring {
 public:
-    void read_stream(std::istream &ins);
+    void read_stream(std::wistream &ins);
 };
 
 };  // namespace

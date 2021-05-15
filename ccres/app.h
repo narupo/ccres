@@ -14,7 +14,7 @@ private:
     Tokenizer _tokenizer;
     Parser _parser;
     Renderer _renderer;
-    
+
 public:
     ~App();
     App(int argc, char *argv[]);

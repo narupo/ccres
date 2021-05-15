@@ -7,7 +7,7 @@ static void test_parser() {
     auto p = Parser();
     auto s = String();
 
-    s.assign(L"123 name 2021-01-02 01:23:45 ID:abc\ncontent");
+    s.assign(L"123 name 2021-01-02 (月) 01:23:45 ID:abc\ncontent");
     auto tokens = t.tokenize(s);
     auto responses = p.parse(tokens);
     assert(responses.size() == 1);
@@ -16,6 +16,7 @@ static void test_parser() {
     assert(responses[0]->datetime.tm_year == 121);
     assert(responses[0]->datetime.tm_mon == 0);
     assert(responses[0]->datetime.tm_mday == 2);
+    assert(responses[0]->datetime.tm_wday == 1);
     assert(responses[0]->datetime.tm_hour == 1);
     assert(responses[0]->datetime.tm_min == 23);
     assert(responses[0]->datetime.tm_sec == 45);

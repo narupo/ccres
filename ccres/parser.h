@@ -34,6 +34,7 @@ private:
     bool _p_number();
     bool _p_name();
     bool _p_date();
+    bool _p_youbi();
     bool _p_time();
     bool _p_id();
     bool _p_content();
