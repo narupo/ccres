@@ -4,12 +4,14 @@ namespace ccres {
 
 Parser::~Parser() {}
 
-Parser::Parser(bool check)
-    : _p()
+Parser::Parser(Options opts, bool check)
+    : _opts(opts)
+    , _check(check)
+    , _p()
     , _end()
     , _responses()
     , _response()
-    , _check(check) {}
+    {}
 
 const std::vector<std::shared_ptr<Response>> &Parser::parse(const std::vector<std::shared_ptr<Token>> &tokens) {
     _responses.clear();
@@ -30,6 +32,10 @@ const std::vector<std::shared_ptr<Response>> &Parser::parse(const std::vector<st
 }
 
 void Parser::_read_if(token_type_t type) {
+    if (_p == _end) {
+        return;
+    }
+
     if ((*_p)->type == type) {
         _p++;
     }
@@ -80,12 +86,17 @@ bool Parser::_p_number() {
         return false;
     }
 
+    _response = std::make_shared<Response>();
+
+    if (!_opts.need_number) {
+        return _p_name();
+    }
+
     auto t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
         return false;
     }
 
-    _response = std::make_shared<Response>();
     try {
         _response->number = std::stoi(t->text);
     } catch (const std::out_of_range &e) {
@@ -96,7 +107,13 @@ bool Parser::_p_number() {
     _read_if(TOKEN_TYPE_COLON);
 
     if (_p == _end) {
-        return false;
+        if (_opts.need_name || _opts.need_date ||
+            _opts.need_youbi || _opts.need_time || 
+            _opts.need_id) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     return _p_name();
@@ -107,17 +124,33 @@ bool Parser::_p_name() {
         return false;
     }
 
-    _read_spaces_and_newlines();
-    auto t = *_p++;
-    if (t->type != TOKEN_TYPE_TEXT) {
-        _p--;
+    if (!_opts.need_name) {
         return _p_date();
     }
 
-    _response->name = t->text;
+    _read_spaces_and_newlines();
+
+    auto buf = String();
+
+    for (; _p != _end; ) {
+        auto t = *_p++;
+        if (t->type == TOKEN_TYPE_SPACES ||
+            t->type == TOKEN_TYPE_NEWLINE) {
+            break;
+        } else {
+            buf += t->text;
+        }
+    }
+
+    _response->name = std::move(buf);
 
     if (_p == _end) {
-        return false;
+        if (_opts.need_date || _opts.need_youbi ||
+            _opts.need_time || _opts.need_id) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     return _p_date();
@@ -128,7 +161,10 @@ bool Parser::_p_date() {
         return false;
     }
 
-    auto savep = _p;
+    if (!_opts.need_date) {
+        return _p_youbi();
+    }
+
     _response->datetime = (struct tm){
         .tm_wday = -1,
     };
@@ -137,8 +173,7 @@ bool Parser::_p_date() {
     _read_spaces_and_newlines();
     auto t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        _p = savep;
-        return _p_id();
+        return false;
     }
     try {
         _response->datetime.tm_year = std::stoi(t->text) - 1900;
@@ -152,11 +187,7 @@ bool Parser::_p_date() {
 
     _read_spaces_and_newlines();
     t = *_p++;
-    if (t->type == TOKEN_TYPE_COLON) {
-        _p = savep;
-        _response->datetime.tm_year = 0;
-        return _p_time();
-    } else if (t->type != TOKEN_TYPE_DATE_SEP) {
+    if (t->type != TOKEN_TYPE_DATE_SEP) {
         _p--;
         return _p_youbi();
     }
@@ -169,8 +200,7 @@ bool Parser::_p_date() {
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        _p--;
-        return _p_youbi();
+        return false;
     }
     try {
         _response->datetime.tm_mon = std::stoi(t->text) - 1;
@@ -197,8 +227,7 @@ bool Parser::_p_date() {
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        _p--;
-        return _p_youbi();
+        return false;
     }
     try {
         _response->datetime.tm_mday = std::stoi(t->text);
@@ -207,7 +236,24 @@ bool Parser::_p_date() {
     }
 
     if (_p == _end) {
-        return true;
+        if (_opts.need_youbi || _opts.need_time || _opts.need_id) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    t = *_p++;
+    if (t->type != TOKEN_TYPE_DATE_SEP) {
+        _p--;
+    }
+
+    if (_p == _end) {
+        if (_opts.need_youbi || _opts.need_time || _opts.need_id) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     return _p_youbi();
@@ -218,26 +264,27 @@ bool Parser::_p_youbi() {
         return true;
     }
 
-    auto savep = _p;
+    if (!_opts.need_youbi) {
+        return _p_time();
+    }
 
     // youbi left
     _read_spaces_and_newlines();
     auto t = *_p++;
     if (t->type != TOKEN_TYPE_YOUBI_LEFT) {
-        _p--;
-        return _p_time();
+        return false;
     }
 
     if (_p == _end) {
-        return true;
+        return false;
     }
 
     // youbi text
     _read_spaces_and_newlines();
     t = *_p++;
-    if (t->type != TOKEN_TYPE_TEXT) {
-        _p = savep;
-        return _p_time();
+    if (!(t->type == TOKEN_TYPE_TEXT ||
+          (t->type == TOKEN_TYPE_DATE_SEP && (t->text == L"月" || t->text == L"日")))) {
+        return false;
     }
 
     static const wchar_t *youbi[] = {L"日", L"月", L"火", L"水", L"木", L"金", L"土", NULL};
@@ -257,12 +304,15 @@ bool Parser::_p_youbi() {
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_YOUBI_RIGHT) {
-        _p--;
-        return _p_time();
+        return false;
     }
 
     if (_p == _end) {
-        return true;
+        if (_opts.need_time || _opts.need_id) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     return _p_time();
@@ -273,12 +323,15 @@ bool Parser::_p_time() {
         return true;
     }
 
+    if (!_opts.need_time) {
+        return _p_id();
+    }
+
     // hour
     _read_spaces_and_newlines();
     auto t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        _p--;
-        return _p_id();
+        return false;
     }
     try {
         _response->datetime.tm_hour = std::stoi(t->text);
@@ -304,8 +357,7 @@ bool Parser::_p_time() {
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        _p--;
-        return _p_id();
+        return false;
     }
     try {
         _response->datetime.tm_min = std::stoi(t->text);
@@ -331,8 +383,7 @@ bool Parser::_p_time() {
     _read_spaces_and_newlines();
     t = *_p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        _p--;
-        return _p_id();
+        return false;
     }
     try {
         _response->datetime.tm_sec = std::stoi(t->text);
@@ -341,7 +392,11 @@ bool Parser::_p_time() {
     }
 
     if (_p == _end) {
-        return true;
+        if (_opts.need_id) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     return _p_id();
@@ -356,11 +411,14 @@ bool Parser::_p_id() {
         return true;
     }
 
+    if (!_opts.need_id) {
+        return _p_content();
+    }
+
     _read_spaces_and_newlines();
     auto t = *_p++;
     if (t->type != TOKEN_TYPE_ID) {
-        _p--;
-        return _p_content();
+        return false;
     }
 
     if (_p == _end) {
@@ -386,8 +444,9 @@ bool Parser::_p_id() {
 
 bool Parser::_p_content() {
     auto buf = String();
-    auto check_parser = Parser(true);
+    auto check_parser = Parser(_opts, true);
 
+    _read_spaces_and_newlines();
     for (; _p != _end; ) {
         bool is_res = check_parser.is_response(_p, _end);
         if (is_res) {

@@ -6,20 +6,22 @@
 #include <ctime>
 #include <ccres/token.h>
 #include <ccres/response.h>
+#include <ccres/opts.h>
 
 namespace ccres {
 
 class Parser {
 private:
+    Options _opts;
+    bool _check;
     std::vector<std::shared_ptr<Token>>::const_iterator _p;
     std::vector<std::shared_ptr<Token>>::const_iterator _end;
     std::vector<std::shared_ptr<Response>> _responses;
     std::shared_ptr<Response> _response;
-    bool _check;
 
 public:
     ~Parser();
-    Parser(bool check=false);
+    Parser(Options opts, bool check=false);
     const std::vector<std::shared_ptr<Response>> &parse(const std::vector<std::shared_ptr<Token>> &tokens);
     bool is_response(
         std::vector<std::shared_ptr<Token>>::const_iterator p,

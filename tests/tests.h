@@ -4,3 +4,4 @@
 #include <ccres/string.h>
 #include <ccres/tokenizer.h>
 #include <ccres/parser.h>
+#include <ccres/opts.h>

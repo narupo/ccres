@@ -11,6 +11,7 @@ OBJS::= \
 	build/tokenizer.o \
 	build/parser.o \
 	build/renderer.o \
+	build/cleaner.o \
 
 all: $(PROG) build/tests/tests
 
@@ -34,7 +35,7 @@ build/tests/tests.o: tests/tests.cc tests/tests.h
 	$(CC) $(CCFLAGS) -c -o $@ $<
 build/main.o: ccres/main.cc ccres/main.h
 	$(CC) $(CCFLAGS) -c -o $@ $<
-build/app.o: ccres/app.cc ccres/app.h
+build/app.o: ccres/app.cc ccres/app.h ccres/except.h
 	$(CC) $(CCFLAGS) -c -o $@ $<
 build/string.o: ccres/string.cc ccres/string.h
 	$(CC) $(CCFLAGS) -c -o $@ $<
@@ -47,4 +48,6 @@ build/tokenizer.o: ccres/tokenizer.cc ccres/tokenizer.h
 build/parser.o: ccres/parser.cc ccres/parser.h
 	$(CC) $(CCFLAGS) -c -o $@ $<
 build/renderer.o: ccres/renderer.cc ccres/renderer.h
+	$(CC) $(CCFLAGS) -c -o $@ $<
+build/cleaner.o: ccres/cleaner.cc ccres/cleaner.h
 	$(CC) $(CCFLAGS) -c -o $@ $<

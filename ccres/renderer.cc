@@ -51,6 +51,8 @@ void Renderer::render_responses_as_json(const std::vector<std::shared_ptr<Respon
         json << L"\t\t\"name\": \"" << _escape(r->name) << "\",\n";
         if (_conv_datetime(d, sizeof d, &r->datetime)) {
             json << L"\t\t\"datetime\": \"" << d << "\",\n";    
+        } else {
+            json << L"\t\t\"datetime\": \"\",\n";
         }
         json << L"\t\t\"id\": \"" << _escape(r->id) << "\",\n";
         json << L"\t\t\"content\": \"" << _escape(r->content) << "\"\n";

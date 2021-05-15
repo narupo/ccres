@@ -25,7 +25,8 @@ bool iscolon(wchar_t c) {
 bool isdatesep(wchar_t c) {
     return c == L'-' || c == L'ー' ||
            c == L'/' || c == L'／' ||
-           c == L'_' || c == L'＿';
+           c == L'_' || c == L'＿' ||
+           c == L'年' || c == L'月' || c == L'日';
 }
 
 bool isyoubileft(wchar_t c) {

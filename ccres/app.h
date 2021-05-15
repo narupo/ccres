@@ -2,26 +2,29 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <locale>
+#include <ccres/cleaner.h>
 #include <ccres/tokenizer.h>
 #include <ccres/parser.h>
 #include <ccres/renderer.h>
+#include <ccres/opts.h>
 
 namespace ccres {
 
 class App {
 private:
-    std::vector<std::string> _args;
-    Tokenizer _tokenizer;
-    Parser _parser;
-    Renderer _renderer;
-
+    int _argc;
+    char **_argv;
+    Options _opts;
+    
 public:
     ~App();
     App(int argc, char *argv[]);
     int run();
 
 private:
-    std::vector<std::string> _argv_to_args(char *argv[]);
+    void _parse_opts(int argc, char *argv[]);
+    void _show_usage() const;
 };
 
 }  // ccres
