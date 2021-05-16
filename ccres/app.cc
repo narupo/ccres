@@ -76,6 +76,7 @@ void App::_show_usage() const {
     std::cout << "Usage:\n";
     std::cout << "\n";
     std::cout << "    $ ccres [options]\n";
+    std::cout << "    $ curl blog-url | ccres --auto --json\n";
     std::cout << "\n";
     std::cout << "The options are:\n";
     std::cout << "\n";
@@ -84,7 +85,6 @@ void App::_show_usage() const {
     std::cout << "                --pre    Render until preprocess.\n";
     std::cout << "    --multi-line-name    Parse multi line name.\n";
     std::cout << "      --render-tokens    Render tokens.\n";
-    std::cout << "               --auto    automatic parse.\n";
     std::cout << "               --auto    automatic parse.\n";
     std::cout << "         --off-number    Off number on parse.\n";
     std::cout << "           --off-name    Off name on parse.\n";
