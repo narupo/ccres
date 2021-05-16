@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <istream>
+#include <iostream>
 
 namespace ccres {
 

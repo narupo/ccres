@@ -3,6 +3,9 @@
 struct Options {
     bool help;
     bool json;
+    bool pre;
+    bool multi_line_name;
+    bool render_tokens;
     bool need_number;
     bool need_name;
     bool need_date;

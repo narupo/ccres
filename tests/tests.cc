@@ -3,7 +3,6 @@
 namespace ccres {
 
 static void test_parser() {
-    setlocale(LC_ALL, "");
     auto t = Tokenizer();
     auto p = Parser((Options) {
         .json = false,
@@ -17,6 +16,58 @@ static void test_parser() {
     auto s = String();
     std::vector<std::shared_ptr<Token>> tokens;
     std::vector<std::shared_ptr<Response>> responses;
+
+    p = Parser((Options) {
+        .json = false,
+        .multi_line_name = false,
+        .need_number = true,
+        .need_name = true,
+        .need_date = true,
+        .need_youbi = true,
+        .need_time = true,
+        .need_id = true,
+    });
+    s.assign(L"10:名無し2021/01/02(日)01:23:45.67ID:abc\ncontent");
+    tokens = t.tokenize(s);
+    responses = p.parse(tokens);
+    assert(responses.size() == 1);
+    assert(responses[0]->number == 10);
+    assert(responses[0]->name == L"名無し");
+    assert(responses[0]->datetime.tm_year == 121);
+    assert(responses[0]->datetime.tm_mon == 0);
+    assert(responses[0]->datetime.tm_mday == 2);
+    assert(responses[0]->datetime.tm_wday == 0);
+    assert(responses[0]->datetime.tm_hour == 1);
+    assert(responses[0]->datetime.tm_min == 23);
+    assert(responses[0]->datetime.tm_sec == 45);
+    assert(responses[0]->id == L"ID:abc");
+    assert(responses[0]->content == L"content");
+
+    p = Parser((Options) {
+        .json = false,
+        .multi_line_name = true,
+        .need_number = true,
+        .need_name = true,
+        .need_date = true,
+        .need_youbi = false,
+        .need_time = true,
+        .need_id = true,
+    });
+    s.assign(L"10\n名前：\n名無しのプログラマー\n2021年01月02日01:23\nID:abc123\nabc\ndef");
+    tokens = t.tokenize(s);
+    responses = p.parse(tokens);
+    assert(responses.size() == 1);
+    assert(responses[0]->number == 10);
+    assert(responses[0]->name == L"名前：\n名無しのプログラマー");
+    assert(responses[0]->datetime.tm_year == 121);
+    assert(responses[0]->datetime.tm_mon == 0);
+    assert(responses[0]->datetime.tm_mday == 2);
+    assert(responses[0]->datetime.tm_wday == -1);
+    assert(responses[0]->datetime.tm_hour == 1);
+    assert(responses[0]->datetime.tm_min == 23);
+    assert(responses[0]->datetime.tm_sec == 0);
+    assert(responses[0]->id == L"ID:abc123");
+    assert(responses[0]->content == L"abc\ndef");
 
     p = Parser((Options) {
         .json = false,
@@ -616,7 +667,8 @@ static void test_parser() {
     assert(responses[0]->id == L"ID:abc");
     assert(responses[0]->content == L"content");
 
-    /* mugen loop
+    /* eternal loop
+
     p = Parser((Options) {
         .json = false,
         .need_number = false,
@@ -634,11 +686,9 @@ static void test_parser() {
 }
 }  // ccres
 
-using namespace ccres;
-using namespace std;
-
 int main() {
-    test_parser();
-    cout << "Done" << endl;
+    setlocale(LC_ALL, "");
+    ccres::test_parser();
+    std::cout << "Done" << std::endl;
     return 0;
 }

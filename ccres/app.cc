@@ -15,7 +15,7 @@ App::App(int argc, char *argv[])
         .need_number = true,
         .need_name = true,
         .need_date = true,
-        .need_youbi = false,
+        .need_youbi = true,
         .need_time = true,
         .need_id = true,
     })
@@ -28,6 +28,12 @@ void App::_parse_opts(int argc, char *argv[]) {
             _opts.help = true;
         } else if (arg == "--json") {
             _opts.json = true;
+        } else if (arg == "--pre") {
+            _opts.pre = true;
+        } else if (arg == "--multi-line-name") {
+            _opts.multi_line_name = true;
+        } else if (arg == "--render-tokens") {
+            _opts.render_tokens = true;            
         } else if (arg == "--off-number") {
             _opts.need_number = false;
         } else if (arg == "--off-name") {
@@ -64,6 +70,7 @@ void App::_show_usage() const {
     std::cout << "\n";
     std::cout << "    --help    Show usage.\n";
     std::cout << "    --json    Dump json format.\n";
+    std::cout << "    --pre     Render until preprocess.\n";
     std::cout << std::endl;
 }
 
@@ -90,7 +97,18 @@ int App::run() {
     auto text = String();
     text.read_stream(std::wcin);
     text = cleaner.clean(text);
+
+    if (_opts.pre) {
+        std::wcout << text << std::endl;
+        return 0;
+    }
+
     auto tokens = tokenizer.tokenize(text);
+    if (_opts.render_tokens) {
+        renderer.render_tokens(tokens);
+        return 0;
+    }
+
     auto responses = parser.parse(tokens);
 
     if (_opts.json) {

@@ -92,4 +92,11 @@ String Renderer::_escape(const String &s) {
     return dst;
 }
 
+void Renderer::render_tokens(const std::vector<std::shared_ptr<Token>> &tokens) {
+    for (const auto &t : tokens) {
+        std::wcout << t->to_string() << "\n";
+    }
+    std::wcout << std::flush;
+}
+
 };  // ccres
