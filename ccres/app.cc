@@ -11,7 +11,6 @@ App::App(int argc, char *argv[])
     : _argc(argc)
     , _argv(argv)
     , _opts({
-        .json = false,
         .need_number = true,
         .need_name = true,
         .need_date = true,
@@ -34,6 +33,8 @@ void App::_parse_opts(int argc, char *argv[]) {
             _opts.multi_line_name = true;
         } else if (arg == "--render-tokens") {
             _opts.render_tokens = true;            
+        } else if (arg == "--auto") {
+            _opts.auto_ = true;            
         } else if (arg == "--off-number") {
             _opts.need_number = false;
         } else if (arg == "--off-name") {
@@ -54,6 +55,16 @@ void App::_parse_opts(int argc, char *argv[]) {
             _opts.need_time = false;
             _opts.need_id = false;
         }
+    }
+
+    if (_opts.auto_) {
+        _opts.multi_line_name = false;
+        _opts.need_number = false;
+        _opts.need_name = false;
+        _opts.need_date = false;
+        _opts.need_youbi = false;
+        _opts.need_time = false;
+        _opts.need_id = false;
     }
 }
 
@@ -110,7 +121,6 @@ int App::run() {
     }
 
     auto responses = parser.parse(tokens);
-
     if (_opts.json) {
         renderer.render_responses_as_json(responses);
     } else {

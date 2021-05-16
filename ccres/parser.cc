@@ -56,44 +56,6 @@ bool Parser::is_response(TokenIterators &its) {
     return _p_number(its);
 }
 
-bool Parser::_p_number(TokenIterators &its) {
-    if (its.p == its.end) {
-        return false;
-    }
-
-    _response = std::make_shared<Response>();
-
-    if (!_opts.need_number) {
-        return _p_name(its);
-    }
-
-    auto t = *its.p++;
-    if (t->type != TOKEN_TYPE_DIGIT) {
-        return false;
-    }
-
-    try {
-        _response->number = std::stoi(t->text);
-    } catch (const std::out_of_range &e) {
-        return false;
-    }
-
-    _read_spaces_and_newlines(its);
-    _read_if(its, TOKEN_TYPE_COLON);
-
-    if (its.p == its.end) {
-        if (_opts.need_name || _opts.need_date ||
-            _opts.need_youbi || _opts.need_time || 
-            _opts.need_id) {
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    return _p_name(its);
-}
-
 bool Parser::_next_is_date(TokenIterators &its) {
     if (its.p == its.end) {
         return false;
@@ -169,12 +131,56 @@ bool Parser::_next_is_id(TokenIterators &its) {
     return true;
 }
 
+bool Parser::_p_number(TokenIterators &its) {
+    if (its.p == its.end) {
+        return false;
+    }
+
+    _response = std::make_shared<Response>();
+
+    if (!_opts.auto_ && !_opts.need_number) {
+        return _p_name(its);
+    }
+
+    auto t = *its.p++;
+    if (t->type != TOKEN_TYPE_DIGIT) {
+        if (_opts.auto_) {
+            return false;  // required number
+        } else {
+            return false;
+        }
+    }
+
+    try {
+        _response->number = std::stoi(t->text);
+    } catch (const std::out_of_range &e) {
+        return false;
+    }
+
+    _read_spaces_and_newlines(its);
+    _read_if(its, TOKEN_TYPE_COLON);
+
+    if (its.p == its.end) {
+        if (_opts.auto_) {
+            return false;
+        } else if (_opts.need_name || _opts.need_date ||
+            _opts.need_youbi || _opts.need_time || 
+            _opts.need_id) {
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    return _p_name(its);
+}
+
 bool Parser::_p_name(TokenIterators &its) {
     if (its.p == its.end) {
         return false;
     }
 
-    if (!_opts.need_name) {
+    if (!_opts.auto_ && !_opts.need_name) {
         return _p_date(its);
     }
 
@@ -183,7 +189,25 @@ bool Parser::_p_name(TokenIterators &its) {
     auto buf = String();
 
     for (; its.p != its.end; its.p++) {
-        if (_opts.multi_line_name) {
+        if (_opts.auto_) {
+            auto c = its;
+            if (_next_is_date(c)) {
+                break;
+            }
+            c = its;
+            if (_next_is_youbi(c)) {
+                break;
+            }
+            c = its;
+            if (_next_is_time(c)) {
+                break;
+            }
+            c = its;
+            if (_next_is_id(c)) {
+                break;
+            }
+            buf += (*its.p)->text;
+        } else if (_opts.multi_line_name) {
             auto c = its;
             if ((_opts.need_date && _next_is_date(c))) {
                 break;
@@ -218,7 +242,9 @@ bool Parser::_p_name(TokenIterators &its) {
     _response->name = std::move(buf);
 
     if (its.p == its.end) {
-        if (_opts.need_date || _opts.need_youbi ||
+        if (_opts.auto_) {
+            return false;
+        } else if (_opts.need_date || _opts.need_youbi ||
             _opts.need_time || _opts.need_id) {
             return false;
         } else {
@@ -234,7 +260,7 @@ bool Parser::_p_date(TokenIterators &its) {
         return false;
     }
 
-    if (!_opts.need_date) {
+    if (!_opts.auto_ && !_opts.need_date) {
         return _p_youbi(its);
     }
 
@@ -246,7 +272,11 @@ bool Parser::_p_date(TokenIterators &its) {
     _read_spaces_and_newlines(its);
     auto t = *its.p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        return false;
+        if (_opts.auto_) {
+            return false;  // required date
+        } else {
+            return false;
+        }
     }
     try {
         _response->datetime.tm_year = std::stoi(t->text) - 1900;
@@ -309,7 +339,9 @@ bool Parser::_p_date(TokenIterators &its) {
     }
 
     if (its.p == its.end) {
-        if (_opts.need_youbi || _opts.need_time || _opts.need_id) {
+        if (_opts.auto_) {
+            return false;
+        } else if (_opts.need_youbi || _opts.need_time || _opts.need_id) {
             return false;
         } else {
             return true;
@@ -322,7 +354,9 @@ bool Parser::_p_date(TokenIterators &its) {
     }
 
     if (its.p == its.end) {
-        if (_opts.need_youbi || _opts.need_time || _opts.need_id) {
+        if (_opts.auto_) {
+            return false;
+        } else if (_opts.need_youbi || _opts.need_time || _opts.need_id) {
             return false;
         } else {
             return true;
@@ -337,7 +371,7 @@ bool Parser::_p_youbi(TokenIterators &its) {
         return true;
     }
 
-    if (!_opts.need_youbi) {
+    if (!_opts.auto_ && !_opts.need_youbi) {
         return _p_time(its);
     }
 
@@ -345,7 +379,12 @@ bool Parser::_p_youbi(TokenIterators &its) {
     _read_spaces_and_newlines(its);
     auto t = *its.p++;
     if (t->type != TOKEN_TYPE_YOUBI_LEFT) {
-        return false;
+        if (_opts.auto_) {
+            its.p--;
+            return _p_time(its);
+        } else {
+            return false;
+        }
     }
 
     if (its.p == its.end) {
@@ -381,7 +420,9 @@ bool Parser::_p_youbi(TokenIterators &its) {
     }
 
     if (its.p == its.end) {
-        if (_opts.need_time || _opts.need_id) {
+        if (_opts.auto_) {
+            return false;
+        } else if (_opts.need_time || _opts.need_id) {
             return false;
         } else {
             return true;
@@ -396,7 +437,7 @@ bool Parser::_p_time(TokenIterators &its) {
         return true;
     }
 
-    if (!_opts.need_time) {
+    if (!_opts.auto_ && !_opts.need_time) {
         return _p_id(its);
     }
 
@@ -404,7 +445,12 @@ bool Parser::_p_time(TokenIterators &its) {
     _read_spaces_and_newlines(its);
     auto t = *its.p++;
     if (t->type != TOKEN_TYPE_DIGIT) {
-        return false;
+        if (_opts.auto_) {
+            its.p--;
+            return _p_id(its);
+        } else {
+            return false;
+        }
     }
     try {
         _response->datetime.tm_hour = std::stoi(t->text);
@@ -465,7 +511,9 @@ bool Parser::_p_time(TokenIterators &its) {
     }
 
     if (its.p == its.end) {
-        if (_opts.need_id) {
+        if (_opts.auto_) {
+            return true;
+        } else if (_opts.need_id) {
             return false;
         } else {
             return true;
@@ -484,14 +532,19 @@ bool Parser::_p_id(TokenIterators &its) {
         return true;
     }
 
-    if (!_opts.need_id) {
+    if (!_opts.auto_ && !_opts.need_id) {
         return _p_content(its);
     }
 
     _read_spaces_and_newlines(its);
     auto t = *its.p++;
     if (t->type != TOKEN_TYPE_ID) {
-        return false;
+        if (_opts.auto_) {
+            its.p--;
+            return _p_content(its);
+        } else {
+            return false;
+        }
     }
 
     if (its.p == its.end) {

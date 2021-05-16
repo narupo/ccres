@@ -35,11 +35,27 @@ String Cleaner::_clean_tags(const String &text) {
 
 String Cleaner::_clean_spaces(const String &text) {
     auto s = String();
+    int m = 0;
 
     for (auto c : text) {
-        if (!isspace(c)) {
-            s += c;
-        }    
+        switch (m) {
+        case 0:
+            if (isspace(c)) {
+                s += c;
+                m = 10;
+            } else {
+                s += c;
+            }
+            break;
+        case 10:  // found space
+            if (isspace(c)) {
+                // pass
+            } else {
+                s += c;
+                m = 0;
+            }
+            break;
+        }
     }
 
     return s;
